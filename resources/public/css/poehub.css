@@ -1,0 +1,24 @@
+body {
+    padding-top: 50px;
+}
+.main {
+    padding: 40px 15px;
+    text-align: center;
+}
+.error {
+    color: #dd0000;
+    font-weight: bold;
+}
+
+table {
+    width: 100%;
+}
+
+th {
+    text-align: center;
+}
+
+th, td {
+    padding: 5px;
+    border: 1px solid black;
+}
