@@ -29,6 +29,8 @@ function search() {
                     resultElement.appendChild(br);
                 });
             }
+        }).fail(function(e) {
+            resultElement.innerHTML = "Failed to search";
         });
     } else {
         resultElement.innerHTML = "Minimum search length is 3 characters";

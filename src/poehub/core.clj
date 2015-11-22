@@ -24,7 +24,7 @@
 
 (defn layout-page [request title page]
   (if (not-empty title)
-    (let [uri (.replaceAll (:uri request) "/index.html" "")]
+    (let [uri (.replaceAll (:uri request) "/index.html" "/")]
       (search/add title uri)))
   (html5
    [:head
@@ -322,8 +322,24 @@
                     (affix-page (get %1 "Id") (get %1 "Row")))
            data/tags))))
 
+(defn server-error [ctx]
+  (layout-page
+   ctx
+   nil
+   [:div
+    [:h1 "Server Error!"]]))
+
+(defn not-found [ctx]
+  (layout-page
+   ctx
+   nil
+   [:div
+    [:h1 "Page not found!"]]))
+
 (defn get-pages []
-  (merge {"/index.html" index}
+  (merge {"/index.html" index
+          "/404.html" not-found
+          "/50x.html" server-error}
          (get-affixes)
          (get-item-classes)
          (get-skillgems)
