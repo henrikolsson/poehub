@@ -1,5 +1,6 @@
 (ns poehub.core
-  (:import [java.io File])
+  (:import [java.io File]
+           [java.util Date])
   (:require [ring.middleware.content-type :refer [wrap-content-type]]
             [clojure.java.shell :as shell]
             [ring.middleware.defaults :refer :all]
@@ -62,10 +63,12 @@
     [:div.container
      [:div.main
       page]]
+    [:footer (str "Page generated at " (Date.))]
     [:script {:src "https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"} ""]
     [:script {:src "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"
               :integrity "sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ=="
               :crossorigin="anonymous"} ""]
+    [:script {:src "//twitter.github.io/typeahead.js/releases/latest/typeahead.bundle.js"}]
     [:script {:src (link/file-path request "/js/poehub.js")} ""]
     [:script "
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -80,14 +83,16 @@
   (layout-page
    ctx
    nil
-   [:div
-    [:form {:method "POST" :onsubmit "return search();"}
+   [:div.center
+    [:h1 "poehub"]
+    [:br]
+    [:form {:method "POST" :onsubmit "return formSearch();"}
      [:div.form-group
       [:input.form-control {:type "text" :name "query" :id "query" :placeholder ""}]]
      [:button {:type "submit" :class "btn btn-default"} "Search"]]
     [:br]
     [:div#search-results ""]]))
-   
+
 (defn get-skillgem-items []
   (filter #(or (= (get %1 "ItemClass") 19)
                (= (get %1 "ItemClass") 20)) data/base-item-types))
@@ -108,6 +113,9 @@
 (defn find-all [data key val]
   (filter #(= (str (get %1 key)) (str val)) data))
 
+(defn find-all-contains [data key val]
+  (filter #(.contains (get %1 key) val) data))
+
 (defn find-first [data key val]
   (first (find-all data key val)))
 
@@ -115,68 +123,98 @@
   (fn [ctx]
     (let [item (find-first data/base-item-types "Row" id)
           meta (find-first data/active-skills "DisplayedName" (get item "Name"))]
-    (layout-page
-     ctx
-     (get item "Name")
-     [:div
-      [:h1 (get item "Name")]
-      (if meta
-        [:div
-         [:p (get meta "Description")]
-         [:img {:src (get meta "WebsiteImage")}]])
-      [:h3 "Quest rewards"]
-      [:table
-       [:tr
-        [:th "Quest"]
-        [:th "Difficulty"]
-        [:th "Character"]]
-       (map #(let [qk (get %1 "QuestKey")]
-               [:tr
-                [:td [:a {:href (str "/quests/" qk "/")}
-                      (get (find-first data/quests "Row" qk) "Title")]]
-                [:td (condp = (get %1 "Difficulty")
-                       1 "Normal"
-                       2 "Cruel"
-                       3 "Merciless")]
-                [:td (get (find-first
-                           data/characters
-                           "Row"
-                           (get %1 "CharactersKey"))
-                          "Name")]])
-            (find-all data/quest-rewards "BaseItemTypesKey" id))]
-      [:h3 "Experience levels"]
-      [:table
-       [:tr
-        [:th "Level"]
-        [:th "Experience"]]
-       (map #(vector
-              :tr
-              [:td (get %1 "ItemCurrentLevel")]
-              [:td (get %1 "Experience")])
-            (find-all data/item-experience-per-level "BaseItemTypesKey" id))]
-      (if meta
-        (let [ge (filter
-                  #(> (count (get %1 "Quality_StatsKeys")) 0)
-                  (find-all data/granted-effects-per-level "ActiveSkillsKey" (get meta "Row")))
-              stat-keys (if (> (count ge) 0)
-                          (get (first ge) "StatsKeys")
-                          '())]
+      (layout-page
+       ctx
+       (get item "Name")
+       [:div
+        [:h1 (get item "Name")]
+        (if meta
           [:div
-           [:h3 "Effects"]
-           [:table
-            [:tr
-             [:th "level"]
-             (map
-              (fn [stat-key]
-                [:th (get (find-first data/stats "Row" stat-key) "Id")])
-              stat-keys)]
-            (map
-             (fn [effect]
-               [:tr
-                [:td (get effect "Level")]
-                (for [i (range (count stat-keys))]
-                  [:td (get effect (str "Stat" (+ i 1) "Value"))])])
-             ge)]]))]))))
+           [:p (get meta "Description")]
+           [:img {:src (get meta "WebsiteImage")}]])
+        [:h3 "Quest rewards"]
+        [:table
+         [:tr
+          [:th "Quest"]
+          [:th "Difficulty"]
+          [:th "Character"]]
+         (map #(let [qk (get %1 "QuestKey")]
+                 [:tr
+                  [:td [:a {:href (str "/quests/" qk "/")}
+                        (get (find-first data/quests "Row" qk) "Title")]]
+                  [:td (condp = (get %1 "Difficulty")
+                         1 "Normal"
+                         2 "Cruel"
+                         3 "Merciless")]
+                  [:td (get (find-first
+                             data/characters
+                             "Row"
+                             (get %1 "CharactersKey"))
+                            "Name")]])
+              (find-all data/quest-rewards "BaseItemTypesKey" id))]
+        [:h3 "Quest vendor rewards"]
+        [:table
+         [:tr
+          [:th "Quest"]
+          [:th "Difficulty"]
+          [:th "Character"]]
+         (map #(let [qk (get %1 "Row")]
+                 [:tr
+                  [:td [:a {:href (str "/quests/" qk "/")}
+                        (get %1 "Title")]]
+                  [:td (condp = (get %1 "Difficulty")
+                         1 "Normal"
+                         2 "Cruel"
+                         3 "Merciless"
+                         "N/A")]
+                  [:td (get (find-first
+                             data/characters
+                             "Row"
+                             (get %1 "CharactersKey"))
+                            "Name")]])
+              (map
+               (fn [quest-vendor-reward]
+                 (let [quest (find-first data/quests "Unknown11" (get quest-vendor-reward "QuestState"))
+                       quest-state (first (find-all-contains data/quest-states "QuestStates" (get quest-vendor-reward "QuestState")))]
+                   (if quest
+                     (assoc quest "CharactersKey" (first (get quest-vendor-reward "CharactersKeys")))
+                     (if quest-state
+                       (assoc (find-first data/quests "Row" (get quest-state "QuestKey"))
+                              "CharactersKey" (first (get quest-vendor-reward "CharactersKeys")))))))
+               (find-all-contains data/quest-vendor-rewards "BaseItemTypesKeys" id)))]
+        (if meta
+          (let [ge (filter
+                    #(> (count (get %1 "Quality_StatsKeys")) 0)
+                    (find-all data/granted-effects-per-level "ActiveSkillsKey" (get meta "Row")))
+                stat-keys (if (> (count ge) 0)
+                            (get (first ge) "StatsKeys")
+                            '())]
+            [:div
+             [:h3 "Effects"]
+             [:table
+              [:tr
+               [:th "level"]
+               (map
+                (fn [stat-key]
+                  [:th (get (find-first data/stats "Row" stat-key) "Id")])
+                stat-keys)]
+              (map
+               (fn [effect]
+                 [:tr
+                  [:td (get effect "Level")]
+                  (for [i (range (count stat-keys))]
+                    [:td (get effect (str "Stat" (+ i 1) "Value"))])])
+               ge)]]))
+        [:h3 "Experience levels"]
+        [:table
+         [:tr
+          [:th "Level"]
+          [:th "Experience"]]
+         (map #(vector
+                :tr
+                [:td (get %1 "ItemCurrentLevel")]
+                [:td (get %1 "Experience")])
+              (find-all data/item-experience-per-level "BaseItemTypesKey" id))]]))))
 
 (defn get-skillgems []
   (merge {"/skillgems/" skillgem-index}
@@ -192,7 +230,13 @@
    nil
    [:div
     [:h1 "Quests"]
-    (map #(vector :p [:a {:href (str "/quests/" (get %1 "Row") "/")} (get %1 "Title")]) data/quests)]))
+    (map
+     #(vector :p [:a {:href (str "/quests/" (get %1 "Row") "/")} (get %1 "Title")])
+     (sort-by
+      #(get %1 "UniqueId")
+      (filter
+       #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "UniqueId"))
+       data/quests)))]))
 
 (defn quest-page [id]
   (fn [ctx]
@@ -221,7 +265,11 @@
           {}
           (map #(vector (str "/quests/" (get %1 "Row") "/")
                         (quest-page (get %1 "Row")))
-               data/quests))))
+               (sort-by
+                #(get %1 "UniqueId")
+                (filter
+                 #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "UniqueId"))
+                 data/quests))))))
 
 (defn item-classes-page [ctx]
   (layout-page
@@ -249,7 +297,7 @@
        [:div
         [:h1 name]
         (map #(vector :p (get %1 "Name")) items)]))))
-  
+
 (defn get-item-classes []
   (merge {"/itemclasses/" item-classes-page}
          (into
@@ -257,6 +305,22 @@
           (map #(vector (str "/itemclasses/" (get %1 "Id") "/")
                         (item-class-page (get %1 "Id") (get %1 "Name")))
                data/item-classes))))
+(defn item-affix-tags []
+  (let [tag-keys (distinct
+                  (flatten
+                   (let [relevant-mods (filter #(or (= (get %1 "GenerationType") 1)
+                                                    (= (get %1 "GenerationType") 2))
+                                               data/mods)]
+                     (map
+                      (fn [mod]
+                        (let [values (get mod "SpawnWeight_Values")
+                              tags (get mod "SpawnWeight_TagsKeys")]
+                          (for [i (range (count values))]
+                            (if (> (nth values i 0) 0)
+                              (nth tags i)
+                              nil))))
+                      relevant-mods))))]
+    (filter #(.contains tag-keys (get %1 "Row")) data/tags)))
 
 (defn affixes-page [ctx]
   (layout-page
@@ -268,7 +332,8 @@
      #(vector :div
               [:a {:href (str "/affixes/" (get %1 "Row") "/")} (get %1 "Id")]
               [:br])
-     (sort-by #(get %1 "Id") data/tags))]))
+     (sort-by #(get %1 "Id") (item-affix-tags)))]))
+
 
 (defn affix-table [affixes]
   [:table
@@ -300,10 +365,10 @@
 (defn find-affixes [tag-key type]
   (filter
    (fn [mod]
-    (let [idx (find-index (get mod "SpawnWeight_TagsKeys") tag-key)]
-      (and (not (= idx nil))
-           (= (get mod "GenerationType") type)
-           (> (nth (get mod "SpawnWeight_Values") idx) 0))))
+     (let [idx (find-index (get mod "SpawnWeight_TagsKeys") tag-key)]
+       (and (not (= idx nil))
+            (= (get mod "GenerationType") type)
+            (> (nth (get mod "SpawnWeight_Values") idx) 0))))
    data/mods))
 
 
@@ -321,6 +386,7 @@
         [:h2 "Suffixes"]
         (affix-table suffixes)]))))
 
+
 (defn get-affixes []
   (merge {"/affixes/" affixes-page}
          (into
@@ -328,7 +394,7 @@
           (map
            #(vector (str "/affixes/" (get %1 "Row") "/")
                     (affix-page (get %1 "Id") (get %1 "Row")))
-           data/tags))))
+           (item-affix-tags)))))
 
 (defn server-error [ctx]
   (layout-page
@@ -383,8 +449,8 @@
     (stasis/export-pages pages site-dir {:optimus-assets assets})
     (log/info
      (shell/sh "elasticdump"
-          (str "--input=http://127.0.0.1:9200/" search/index-name)
-          (str "--output=" target-dir "/es_dump")))))
+               (str "--input=http://127.0.0.1:9200/" search/index-name)
+               (str "--output=" target-dir "/es_dump")))))
 
 (comment
   (export))

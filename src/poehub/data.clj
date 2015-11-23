@@ -13,6 +13,8 @@
   (dat/parse-memoized (str data-path "QuestStates.dat")))
 (def quest-rewards
   (dat/parse-memoized (str data-path "QuestRewards.dat")))
+(def quest-vendor-rewards
+  (dat/parse-memoized (str data-path "QuestVendorRewards.dat")))
 (def active-skills
   (dat/parse-memoized (str data-path "ActiveSkills.dat")))
 (def item-classes

@@ -1,5 +1,10 @@
-* TODO Find as you type
-* TODO Filter out irrelevant tags from affixes page
-* TODO Add npc vendor "rewards" to skill pages 
+* DONE Find as you type
+  CLOSED: [2015-11-23 Mon 20:59]
+* DONE Filter out irrelevant tags from affixes page
+CLOSED: [2015-11-23 Mon 19:51]
+* DONE Add npc vendor "rewards" to skill pages
+  CLOSED: [2015-11-23 Mon 20:23]
 * TODO Combine tables on skill page, give it 100% width
+* TODO Fix effects for passive gems
+
 
