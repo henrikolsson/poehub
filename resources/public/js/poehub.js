@@ -6,7 +6,6 @@ function searchMatcher(q, cb, cbAsync) {
                 res.forEach(function(r) {
                     ret.push(r._source.title);
                 });
-                console.log(ret);
                 cbAsync(ret);
             }
         });
@@ -46,6 +45,7 @@ function search(q, cb) {
 }
 
 function formSearch() {
+    $('#query').typeahead('close');
     var q = document.querySelector("#query").value;
     if (window.searchResults && window.searchResults[q]) {
         window.location.href = window.searchResults[q];
