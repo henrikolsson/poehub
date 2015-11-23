@@ -1,0 +1,5 @@
+* TODO Find as you type
+* TODO Filter out irrelevant tags from affixes page
+* TODO Add npc vendor "rewards" to skill pages 
+* TODO Combine tables on skill page, give it 100% width
+
