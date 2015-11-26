@@ -15,9 +15,16 @@
                  [clojurewerkz/elastisch "2.1.0"]
                  [org.clojure/tools.logging "0.3.1"]
                  [com.google.guava/guava "18.0"]
+                 [commons-codec/commons-codec "1.10"]
                  [optimus "0.18.3"]]
   :plugins [[lein-ring "0.9.7"]]
-  :jvm-opts ["-Xmx1g"]
+  :profiles {:dev
+             {:jvm-opts ["-Xmx1g"
+                         "-Dcom.sun.management.jmxremote"
+                         "-Dcom.sun.management.jmxremote.ssl=false"
+                         "-Dcom.sun.management.jmxremote.authenticate=false"
+                         "-Dcom.sun.management.jmxremote.port=43210"]}}
   :aliases {"build-site" ["run" "-m" "poehub.core/export"]}
   :ring {:handler poehub.core/app
          :nrepl {:start? true}})
+

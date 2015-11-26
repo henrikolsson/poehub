@@ -143,6 +143,8 @@
          record-count (read-int stream)
          magic (find-magic stream record-count)
          spec (get specs (.getName file))]
+     (if (not spec)
+       (throw (IllegalArgumentException. (str "No spec found for: " (.getName file)))))
      (log/info "records:" record-count)
      (log/info "magic: " magic)
      (log/info "spec:" spec)
