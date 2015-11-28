@@ -8,4 +8,13 @@ dat.specification.ini comes from [OmegaK2/PyPoE](https://github.com/OmegaK2/PyPo
 
 ## Running
 
-.... 
+Change the paths in src/poehub/config.clj. Requires elasticsearch running.
+
+Development:
+
+    $ lein ring server-headless
+
+Build site:
+
+    $ lein build-site
+
