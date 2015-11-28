@@ -7,6 +7,38 @@
             [poehub.dat :as dat]
             [poehub.search :as search]))
 
+(defn simple-layout-page [request title page]
+  (html5
+   [:head
+    [:meta {:charset "utf-8"}]
+    [:meta {:http-equiv "X-UA-Compatible" :content "IE=edge"}]
+    [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+    [:title (if (not-empty title)
+              (str "poehub - " title)
+              "poehub")]
+    [:link {:rel "stylesheet" :href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"
+            :integrity "sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ=="
+            :crossorigin="anonymous"}]
+    [:link {:rel "stylesheet" :href (link/file-path request "/css/poehub.css")}]]
+   [:body
+    [:div.container
+     [:div.main
+      page]]
+    [:script {:src "https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"} ""]
+    [:script {:src "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"
+              :integrity "sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ=="
+              :crossorigin="anonymous"} ""]
+    [:script {:src "//twitter.github.io/typeahead.js/releases/latest/typeahead.bundle.js"}]
+    [:script {:src (link/file-path request "/js/poehub.js")} ""]
+    [:script "
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-70467764-1', 'auto');
+  ga('send', 'pageview');"]]))
+
 (defn layout-page [request title page]
   (if (not-empty title)
     (let [uri (.replaceAll (:uri request) "/index.html" "/")]
@@ -388,18 +420,24 @@
            (item-affix-tags)))))
 
 (defn server-error [ctx]
-  (layout-page
+  (simple-layout-page
    ctx
    nil
    [:div
-    [:h1 "Server Error!"]]))
+    [:h1 "Server Error!"]
+    [:br]
+    [:h4 "Go to "
+     [:a {:href "/"} "Start page"] "."]]))
 
 (defn not-found [ctx]
-  (layout-page
+  (simple-layout-page
    ctx
    nil
    [:div
-    [:h1 "Page not found!"]]))
+    [:h1 "Page not found!"]
+    [:br]
+    [:h4 "Go to "
+     [:a {:href "/"} "Start page"] "."]]))
 
 (defn get-pages []
   (merge {"/index.html" index
