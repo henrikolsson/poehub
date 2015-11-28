@@ -1,6 +1,7 @@
 (ns poehub.pages
   (:import [java.util Date])
-  (:require [hiccup.page :refer [html5]]
+  (:require [clojure.tools.logging :as log]
+            [hiccup.page :refer [html5]]
             [optimus.link :as link]
             [poehub.data :as data]
             [poehub.dat :as dat]
@@ -87,17 +88,18 @@
                (= (get %1 "ItemClass") 20)) data/base-item-types))
 
 (defn skillgem-index [ctx]
-  (let [filtered (filter #(or (= (get %1 "ItemClass") 19)
-                              (= (get %1 "ItemClass") 20)) data/base-item-types)]
+  (let [filtered (filter #(and (or (= (get %1 "ItemClass") 19)
+                                   (= (get %1 "ItemClass") 20))
+                               (re-find #"[a-zA-Z]" (get %1 "Name")))
+                         data/base-item-types)]
     (layout-page
      ctx
      nil
      [:div
       [:h1 "Skillgems"]
       (map #(vec
-             [:p
-              [:a {:href (str "/skillgems/" (get %1 "Row"))}  (get %1 "Name")]])
-           filtered)])))
+             [:a.list-item {:href (str "/skillgems/" (get %1 "Row"))}  (get %1 "Name")])
+           (sort-by #(get %1 "Name") filtered))])))
 
 (defn find-all [data key val]
   (filter #(= (str (get %1 key)) (str val)) data))
@@ -220,9 +222,10 @@
    [:div
     [:h1 "Quests"]
     (map
-     #(vector :p [:a {:href (str "/quests/" (get %1 "Row") "/")} (get %1 "Title")])
+     #(vector :a.list-item {:href (str "/quests/" (get %1 "Row") "/")}
+              (str (get %1 "Title") " (" (get %1 "UniqueId") ")"))
      (sort-by
-      #(get %1 "UniqueId")
+      #(get %1 "Title")
       (filter
        #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "UniqueId"))
        data/quests)))]))
@@ -268,9 +271,7 @@
     [:h1 "Item classes"]
     (map
      #(vector
-       :div
-       [:a {:href (str "/itemclasses/" (get %1 "Id") "/")} (get %1 "Name")]
-       [:br])
+       :a.list-item {:href (str "/itemclasses/" (get %1 "Id") "/")} (get %1 "Name"))
      (sort-by
       #(get %1 "Name")
       (filter
@@ -285,7 +286,8 @@
        name
        [:div
         [:h1 name]
-        (map #(vector :p (get %1 "Name")) items)]))))
+        (map #(vector :div.list-item (get %1 "Name"))
+             (sort-by #(get %1 "Name") items))]))))
 
 (defn get-item-classes []
   (merge {"/itemclasses/" item-classes-page}
@@ -294,6 +296,7 @@
           (map #(vector (str "/itemclasses/" (get %1 "Id") "/")
                         (item-class-page (get %1 "Id") (get %1 "Name")))
                data/item-classes))))
+
 (defn item-affix-tags []
   (let [tag-keys (distinct
                   (flatten
@@ -318,9 +321,8 @@
    [:div
     [:h1 "Affixes"]
     (map
-     #(vector :div
-              [:a {:href (str "/affixes/" (get %1 "Row") "/")} (get %1 "Id")]
-              [:br])
+     #(vector
+       :a.list-item {:href (str "/affixes/" (get %1 "Row") "/")} (get %1 "Id"))
      (sort-by #(get %1 "Id") (item-affix-tags)))]))
 
 

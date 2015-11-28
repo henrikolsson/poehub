@@ -7,7 +7,7 @@ body {
     margin-bottom: 60px;
 }
 .main {
-    text-align: center;
+    text-align: left;
 }
 .error {
     color: #dd0000;
@@ -70,6 +70,7 @@ footer {
 }
 
 .tt-menu {
+    max-width: 100%;
     width: 422px;
     margin: 12px 0;
     padding: 8px 0;
@@ -104,4 +105,13 @@ footer {
 
 .tt-suggestion p {
     margin: 0;
+}
+
+.center {
+    text-align: center;
+}
+
+.list-item {
+    width: 33%;
+    display: inline-block;
 }
