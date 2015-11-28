@@ -115,3 +115,15 @@ footer {
     width: 33%;
     display: inline-block;
 }
+
+@media (max-width: 768px) {
+    .list-item {
+        width: 50%;
+    }
+}
+
+@media (max-width: 480px) {
+    .list-item {
+        width: 100%;
+    }
+}
