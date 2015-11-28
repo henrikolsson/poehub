@@ -24,7 +24,7 @@
                          "-Dcom.sun.management.jmxremote.ssl=false"
                          "-Dcom.sun.management.jmxremote.authenticate=false"
                          "-Dcom.sun.management.jmxremote.port=43210"]}}
-  :aliases {"build-site" ["run" "-m" "poehub.core/export"]}
+  :aliases {"build-site" ["run" "-m" "poehub.export/export"]}
   :ring {:handler poehub.core/app
          :nrepl {:start? true}})
 

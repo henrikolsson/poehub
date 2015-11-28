@@ -1,8 +1,10 @@
 (ns poehub.dat
   (:import [com.google.common.io LittleEndianDataInputStream]
-           [java.io FileInputStream RandomAccessFile File]
+           [java.io FileInputStream RandomAccessFile File FileOutputStream]
            [java.nio ByteBuffer ByteOrder])
   (:require [clojure.tools.logging :as log]
+            [clojure.data.json :as json]
+            [poehub.config :as config]
             [clojure.java.io :as io]))
 
 (def MAGIC (Long/parseUnsignedLong "13527612320720337851"))
@@ -67,11 +69,11 @@
       (bytes-to-ulong-le)))
 
 (defn find-magic [stream record-count]
-  (log/info "Record count:" record-count)
+  (log/debug "Record count:" record-count)
   (loop [i 0]
     (if (= (read-long stream) MAGIC)
       (do
-        (log/info "Found magic at:" (- (.getFilePointer stream) 8))
+        (log/debug "Found magic at:" (- (.getFilePointer stream) 8))
         {:data-section-offset (- (.getFilePointer stream) 8)
          :record-length i})
       (do
@@ -135,9 +137,34 @@
                [field (read-type stream type data-section-offset)])
              spec)))
 
+(def data-version (atom nil))
+
+(defn set-data-version! [v]
+  (log/info "using data version:" v)
+  (reset! data-version v))
+
+(defn- get-latest-data-version []
+  (.getName
+   (reduce (fn [f1 f2]
+             (if (> (.lastModified f1) (.lastModified f2))
+               f1
+               f2))
+           (seq (.listFiles (File. config/data-dir))))))
+
+(defn get-data-version []
+  (if (not @data-version)
+    (set-data-version! (get-latest-data-version)))
+  @data-version)
+
+(defn- resolve-filename [filename]
+  (if (.isAbsolute (File. filename))
+    filename
+    (str config/data-dir File/separator (get-data-version) File/separator filename)))
+
 (defn parse [filename]
   (lazy-seq
-   (let [file (File. filename)
+   (let [resolved-filename (resolve-filename filename)
+         file (File. resolved-filename)
          size (.length file)
          stream (RandomAccessFile. file "r")
          record-count (read-int stream)
@@ -145,9 +172,9 @@
          spec (get specs (.getName file))]
      (if (not spec)
        (throw (IllegalArgumentException. (str "No spec found for: " (.getName file)))))
-     (log/info "records:" record-count)
-     (log/info "magic: " magic)
-     (log/info "spec:" spec)
+     (log/debug "records:" record-count)
+     (log/debug "magic: " magic)
+     (log/debug "spec:" spec)
      (for [i (range record-count)]
        (do (.seek stream (+ (* (:record-length magic) i) 4))
            (log/trace "seeked " (.getFilePointer stream))
@@ -156,3 +183,21 @@
                   i))))))
 
 (def parse-memoized (memoize parse))
+
+(defn jsonify-all []
+  (log/info "writing json files...")
+  (let [dir (File. (str config/data-dir File/separator (get-data-version)))]
+    (doseq [dat (seq (.listFiles dir))]
+      (let [parsed (parse-memoized (.getName dat))
+            out-file (File. (str config/data-dir File/separator (get-data-version) File/separator (.replaceAll (.getName dat) "\\.dat$" ".json")))]
+        (if (not (.exists out-file))
+          (let [stream (FileOutputStream. out-file)]
+            (log/info "writing json file:" (.getName out-file))
+            (try
+              (.write stream (.getBytes (json/write-str parsed) "UTF-8"))
+              (.close stream)
+              (catch Exception e
+                (.close stream)
+                (.delete out-file)
+                (log/error e "failed to write/parse json")))))))))
+

@@ -1,31 +1,31 @@
 (ns poehub.data
-  (:require [poehub.dat :as dat]))
-
-(def data-path (str "/home/henrik/dev/poehub/Data/"))
+  (:import [java.io File])
+  (:require [clojure.tools.logging :as log]
+            [poehub.dat :as dat]))
 
 (def characters
-  (dat/parse-memoized (str data-path "Characters.dat")))
+  (dat/parse-memoized "Characters.dat"))
 (def base-item-types
-  (dat/parse-memoized (str data-path "BaseItemTypes.dat")))
+  (dat/parse-memoized "BaseItemTypes.dat"))
 (def quests
-  (dat/parse-memoized (str data-path "Quest.dat")))
+  (dat/parse-memoized "Quest.dat"))
 (def quest-states
-  (dat/parse-memoized (str data-path "QuestStates.dat")))
+  (dat/parse-memoized "QuestStates.dat"))
 (def quest-rewards
-  (dat/parse-memoized (str data-path "QuestRewards.dat")))
+  (dat/parse-memoized "QuestRewards.dat"))
 (def quest-vendor-rewards
-  (dat/parse-memoized (str data-path "QuestVendorRewards.dat")))
+  (dat/parse-memoized "QuestVendorRewards.dat"))
 (def active-skills
-  (dat/parse-memoized (str data-path "ActiveSkills.dat")))
+  (dat/parse-memoized "ActiveSkills.dat"))
 (def item-classes
-  (dat/parse-memoized (str data-path "ItemClassesDisplay.dat")))
+  (dat/parse-memoized "ItemClassesDisplay.dat"))
 (def item-experience-per-level
-  (dat/parse-memoized (str data-path "ItemExperiencePerLevel.dat")))
+  (dat/parse-memoized "ItemExperiencePerLevel.dat"))
 (def granted-effects-per-level
-  (dat/parse-memoized (str data-path "GrantedEffectsPerLevel.dat")))
+  (dat/parse-memoized "GrantedEffectsPerLevel.dat"))
 (def stats
-  (dat/parse-memoized (str data-path "Stats.dat")))
+  (dat/parse-memoized "Stats.dat"))
 (def tags
-  (dat/parse-memoized (str data-path "Tags.dat")))
+  (dat/parse-memoized "Tags.dat"))
 (def mods
-  (dat/parse-memoized (str data-path "Mods.dat")))
+  (dat/parse-memoized "Mods.dat"))

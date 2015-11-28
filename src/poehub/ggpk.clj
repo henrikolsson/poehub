@@ -2,6 +2,7 @@
   (:import [java.io RandomAccessFile FileInputStream FileOutputStream]
            [java.text SimpleDateFormat]
            [java.util TimeZone]
+           [java.io File]
            [org.apache.commons.codec.digest DigestUtils])
   (:require [clojure.tools.logging :as log]
             [clojure.tools.logging :as log]
@@ -74,16 +75,20 @@
   (with-open [stream (FileInputStream. fn)]
     (DigestUtils/md5Hex stream)))
 
-(defn get-final-path [input-file base]
+(defn get-version [input-file]
   (let [formatter (doto (SimpleDateFormat. "yyyyMMdd'T'HHmmss'Z'")
                     (.setTimeZone (TimeZone/getTimeZone "UTC")))
         timestamp (.format formatter (.lastModified (File. input-file)))
         hash (get-hash input-file)]
-    (str base (File/separator) timestamp "-" hash)))
+    (str timestamp "-" hash)))
+
+(defn get-final-path [base version]
+  (str base (File/separator) version))
 
 (defn extract-data-files [input-file base-output-dir]
   (log/info "extracing from:" input-file "...")
-  (let [output-dir-name (get-final-path input-file base-output-dir)
+  (let [version (get-version input-file)
+        output-dir-name (get-final-path base-output-dir version)
         output-dir (File. output-dir-name)]
     (log/info "output directory:" output-dir-name)
     (if (not (.exists output-dir))
@@ -103,8 +108,7 @@
               (.write of data)
               (.close of)))))
       (log/info "already exists, nothing to do"))
-    (log/info "extraction done")))
-
-; (extract-data-files "/home/henrik/Content.ggpk" "/home/henrik/dev/asdf/poehub/data")
+    (log/info "extraction done")
+    version))
 
 
