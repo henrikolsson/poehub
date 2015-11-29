@@ -28,7 +28,7 @@
                 (log/info "getting pages...")
                 (get-pages))
         site-dir (File. (str config/target-dir File/separator "site" File/separator version))]
-    (log/info "site dir: " site-dir)
+    (log/info "site dir: " (.getCanonicalPath site-dir))
     (if (not (.exists site-dir))
       (.mkdirs site-dir))
     (search/recreate)

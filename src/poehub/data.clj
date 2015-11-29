@@ -29,3 +29,9 @@
   (dat/parse-memoized "Tags.dat"))
 (def mods
   (dat/parse-memoized "Mods.dat"))
+(def gem-tags
+  (dat/parse-memoized "GemTags.dat"))
+(def skill-gems
+  (dat/parse-memoized "SkillGems.dat"))
+(def granted-effects
+  (dat/parse-memoized "GrantedEffects.dat"))

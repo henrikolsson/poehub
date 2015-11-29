@@ -368,7 +368,7 @@
     [:h1 "Item classes"]
     (map
      #(vector
-       :a.list-item {:href (str "/itemclasses/" (get %1 "Id") "/")} (get %1 "Name"))
+       :a.list-item {:href (str "/itemclasses/" (get %1 "ClassId") "/")} (get %1 "Name"))
      (sort-by
       #(get %1 "Name")
       (filter
@@ -390,8 +390,8 @@
   (merge {"/itemclasses/" item-classes-page}
          (into
           {}
-          (map #(vector (str "/itemclasses/" (get %1 "Id") "/")
-                        (item-class-page (get %1 "Id") (get %1 "Name")))
+          (map #(vector (str "/itemclasses/" (get %1 "ClassId") "/")
+                        (item-class-page (get %1 "ClassId") (get %1 "Name")))
                data/item-classes))))
 
 (defn item-affix-tags []
