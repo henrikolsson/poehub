@@ -116,6 +116,11 @@ footer {
     display: inline-block;
 }
 
+.skill-small-table {
+    float: right;
+    max-width: 450px;
+}
+
 @media (max-width: 768px) {
     .list-item {
         width: 50%;
@@ -130,3 +135,7 @@ footer {
 
 tr:nth-child(even) {background: #DDD}
 tr:nth-child(odd) {background: #FFF}
+
+td.column-key {
+    font-weight: bold;
+}

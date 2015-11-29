@@ -3,6 +3,7 @@
   (:require [clojure.tools.logging :as log]
             [hiccup.page :refer [html5]]
             [optimus.link :as link]
+            [clojure.string :as string]
             [poehub.data :as data]
             [poehub.dat :as dat]
             [poehub.search :as search]))
@@ -130,7 +131,7 @@
      [:div
       [:h1 "Skillgems"]
       (map #(vec
-             [:a.list-item {:href (str "/skillgems/" (get %1 "Row"))}  (get %1 "Name")])
+             [:a.list-item {:href (str "/skillgems/" (get %1 "Row") "/")}  (get %1 "Name")])
            (sort-by #(get %1 "Name") filtered))])))
 
 (defn find-all [data key val]
@@ -141,6 +142,68 @@
 
 (defn find-first [data key val]
   (first (find-all data key val)))
+
+(defn title-case [s]
+  (string/join
+   " "
+   (map
+    #(if (> (.length %1) 0)
+       (str (Character/toUpperCase (.charAt %1 0))
+            (.substring %1 1 (.length %1)))
+       %1)
+    (.split s " "))))
+
+(defn get-skill-small-table [item meta id]
+  (let [all-tags (get (find-first data/skill-gems "BaseItemTypesKey" id) "GemTagsKeys")
+        display-tags (filter #(> (.length (get %1 "Tag")) 0)
+                             (map #(find-first data/gem-tags "Row" %1)
+                                  all-tags))
+        attributes (string/join
+                    ", "
+                    (map title-case
+                         (filter #(.contains #{"intelligence" "dexterity" "strength"} %1)
+                                 (map #(get (find-first data/gem-tags "Row" %1) "Id")
+                                      all-tags))))]
+    [:table
+     [:tr
+      [:td.column-key "Attribute(s)"]
+      [:td attributes]]
+     [:tr
+      [:td.column-key "Tags"]
+      [:td (map #(vector :a {:href (str "/gemtags/" (get %1 "Row") "/")} (str (get %1 "Tag")" "))
+                display-tags)]]
+     [:tr
+      [:td.column-key "Required level"]
+      [:td (get item "DropLevel")]]
+     [:tr
+      [:td.column-key "Cast time"]
+      [:td (if meta
+             (str (format "%.2f" (/ (get meta "CastTime") 1000.0)) " secs")
+             "N/A")]]
+     [:tr
+      [:td.column-key "Per 1% quality"]
+      [:td (if meta
+             (let [row (first (filter #(> (count (get %1 "Quality_StatsKeys")) 0) (find-all data/granted-effects-per-level "ActiveSkillsKey" (get meta "Row"))))]
+               (if row
+                 (let [stats-keys (get row "Quality_StatsKeys")
+                       stats-values (get row "Quality_Values")]
+                   (string/join
+                    ", "
+                    (map (fn [i]
+                           (str (format "%.2f " (/ (nth stats-values i) 1000.0)) (get (find-first data/stats "Row" (nth stats-keys i)) "Id")))
+                         (range (count stats-keys)))))
+                 "N/A"))
+             "Unknown")]]]))
+
+(comment
+  (find-first data/active-skills "DisplayedName" "Vengeance")
+  (find-first data/active-skills "DisplayedName" "Summon Chaos Golem")
+  (get (find-first data/granted-effects-per-level "ActiveSkillsKey" 332) "Quality_Values")
+  (let [quality-stats-keys (distinct
+                            (reduce #(concat %1 [(get %2 "Quality_StatsKeys") (get %2 "Quality_Values")])
+                                    []
+                                    (find-all data/granted-effects-per-level "ActiveSkillsKey" 332)))]
+    (map #(str  "?? " (get (find-first data/stats "Row" %1) "Id")) quality-stats-keys)))
 
 (defn skillgem-page [id]
   (fn [ctx]
@@ -153,7 +216,9 @@
         [:h1 (get item "Name")]
         (if meta
           [:div
-           [:img {:style "float: right" :src (get meta "WebsiteImage")}]
+           [:div.skill-small-table
+            (get-skill-small-table item meta id)
+             [:img {:style "padding-top: 10px; width: 100%" :src (get meta "WebsiteImage")}]]
            [:p (get meta "Description")]])
         [:h3 {:style "clear: both"} "Quest rewards"]
         [:table
@@ -255,11 +320,11 @@
     [:h1 "Quests"]
     (map
      #(vector :a.list-item {:href (str "/quests/" (get %1 "Row") "/")}
-              (str (get %1 "Title") " (" (get %1 "UniqueId") ")"))
+              (str (get %1 "Title") " (" (get %1 "Id") ")"))
      (sort-by
       #(get %1 "Title")
       (filter
-       #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "UniqueId"))
+       #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "Id"))
        data/quests)))]))
 
 (defn quest-page [id]
@@ -290,9 +355,9 @@
           (map #(vector (str "/quests/" (get %1 "Row") "/")
                         (quest-page (get %1 "Row")))
                (sort-by
-                #(get %1 "UniqueId")
+                #(get %1 "Id")
                 (filter
-                 #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "UniqueId"))
+                 #(re-matches #"^a[0-9]+q[0-9]+$" (get %1 "Id"))
                  data/quests))))))
 
 (defn item-classes-page [ctx]
@@ -439,10 +504,41 @@
     [:h4 "Go to "
      [:a {:href "/"} "Start page"] "."]]))
 
+(defn gemtags-list [ctx]
+  (layout-page
+   ctx
+   nil
+   [:div
+    [:h1 "Gem Tags"]
+    (map #(vector :a.list-item {:href (str "/gemtags/" (get %1 "Row") "/")} (get %1 "Tag"))
+         (sort-by #(get %1 "Tag") (filter #(> (.length (get %1 "Tag")) 0) data/gem-tags)))]))
+
+(defn get-gemtag [gem-tag]
+  (fn [ctx]
+    (layout-page
+     ctx
+     (get gem-tag "Tag")
+     [:div
+      [:h1 (get gem-tag "Tag")]
+      (let [skill-gems (filter #(find-index (get %1 "GemTagsKeys") (get gem-tag "Row"))
+                               data/skill-gems)
+            items (map #(find-first data/base-item-types "Row" (get %1 "BaseItemTypesKey")) skill-gems)]
+            (map
+             #(vector :a.list-item {:href (str "/skillgems/" (get %1 "Row") "/")} (get %1 "Name"))
+             (sort-by #(get %1 "Name") items)))])))
+
+(defn get-gemtags []
+   (merge {"/gemtags/" gemtags-list}
+          (into
+           {}
+           (map #(vector (str "/gemtags/" (get %1 "Row") "/") (get-gemtag %1))
+                (filter #(> (.length (get %1 "Tag")) 0) data/gem-tags)))))
+
 (defn get-pages []
   (merge {"/index.html" index
           "/404.html" not-found
           "/50x.html" server-error}
+         (get-gemtags)
          (get-affixes)
          (get-item-classes)
          (get-skillgems)
