@@ -153,9 +153,9 @@
         [:h1 (get item "Name")]
         (if meta
           [:div
-           [:p (get meta "Description")]
-           [:img {:src (get meta "WebsiteImage")}]])
-        [:h3 "Quest rewards"]
+           [:img {:style "float: right" :src (get meta "WebsiteImage")}]
+           [:p (get meta "Description")]])
+        [:h3 {:style "clear: both"} "Quest rewards"]
         [:table
          [:tr
           [:th "Quest"]

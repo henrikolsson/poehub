@@ -110,5 +110,3 @@
       (log/info "already exists, nothing to do"))
     (log/info "extraction done")
     version))
-
-

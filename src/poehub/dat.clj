@@ -60,11 +60,25 @@
      (bit-shift-left (bit-and (aget bytes 1) 0xFF) 8)
      (bit-shift-left (bit-and (aget bytes 0) 0xFF) 0)))
 
+(defn bytes-to-int-le [bytes]
+  (unchecked-int (bytes-to-uint-le bytes)))
+
+(defn bytes-to-long-le [bytes]
+  (unchecked-long (bytes-to-ulong-le bytes)))
+
 (defn read-int [stream]
+  (-> (read-bytes stream 4)
+      (bytes-to-int-le)))
+
+(defn read-uint [stream]
   (-> (read-bytes stream 4)
       (bytes-to-uint-le)))
 
 (defn read-long [stream]
+  (-> (read-bytes stream 8)
+      (bytes-to-long-le)))
+
+(defn read-ulong [stream]
   (-> (read-bytes stream 8)
       (bytes-to-ulong-le)))
 
@@ -122,8 +136,10 @@
                       (catch Exception e
                         (log/error e "Failed to read reference")
                         "ERROR"))))
-    #"u?long" (read-long stream)
-    #"u?int" (read-int stream)
+    #"ulong" (read-ulong stream)
+    #"uint" (read-uint stream)
+    #"long" (read-long stream)
+    #"int" (read-int stream)
     #"u?byte" (.readByte stream)
     #"bool" (.readByte stream)
     #"string" (read-utf16-string stream))) ; FIXME

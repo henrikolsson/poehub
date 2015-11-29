@@ -9,3 +9,4 @@ CLOSED: [2015-11-23 Mon 19:51]
 * TODO Gem quality
 * TODO Characters page with vendor gem rewards
 * TODO Create affix page with combined tags for item classes
+* TODO Investigate: XP monsters give in different zones/maps?

@@ -127,3 +127,6 @@ footer {
         width: 100%;
     }
 }
+
+tr:nth-child(even) {background: #DDD}
+tr:nth-child(odd) {background: #FFF}
