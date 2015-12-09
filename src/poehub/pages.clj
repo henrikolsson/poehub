@@ -195,16 +195,6 @@
                  "N/A"))
              "Unknown")]]]))
 
-(comment
-  (find-first data/active-skills "DisplayedName" "Vengeance")
-  (find-first data/active-skills "DisplayedName" "Summon Chaos Golem")
-  (get (find-first data/granted-effects-per-level "ActiveSkillsKey" 332) "Quality_Values")
-  (let [quality-stats-keys (distinct
-                            (reduce #(concat %1 [(get %2 "Quality_StatsKeys") (get %2 "Quality_Values")])
-                                    []
-                                    (find-all data/granted-effects-per-level "ActiveSkillsKey" 332)))]
-    (map #(str  "?? " (get (find-first data/stats "Row" %1) "Id")) quality-stats-keys)))
-
 (defn skillgem-page [id]
   (fn [ctx]
     (let [item (find-first data/base-item-types "Row" id)
@@ -282,6 +272,7 @@
              [:table
               [:tr
                [:th "level"]
+               [:th "mana cost"]
                (map
                 (fn [stat-key]
                   [:th (get (find-first data/stats "Row" stat-key) "Id")])
@@ -290,6 +281,7 @@
                (fn [effect]
                  [:tr
                   [:td (get effect "Level")]
+                  [:td (get effect "ManaCost")]
                   (for [i (range (count stat-keys))]
                     [:td (get effect (str "Stat" (+ i 1) "Value"))])])
                ge)]]))
