@@ -204,7 +204,6 @@
                            (str (format "%.2f " (/ (nth stats-values i) 1000.0)) (get (find-first data/stats "Row" (nth stats-keys i)) "Id")))
                          (range (count stats-keys))))))))]]]))
 
-(find-first data/skill-gems "BaseItemTypesKey" 1531)
 (defn skillgem-page [id]
   (fn [ctx]
     (let [item (find-first data/base-item-types "Row" id)
