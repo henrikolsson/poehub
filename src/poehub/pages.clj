@@ -78,7 +78,8 @@
         [:li [:a {:href "/affixes/"} "Affixes"]]
         [:li [:a {:href "/quests/"} "Quests"]]
         [:li [:a {:href "/archive/"} "Archive"]]
-        [:li [:a {:href "/data/"} "Data"]]]]]]
+        [:li [:a {:href "/data/"} "Data"]]
+        [:li [:a {:href "/changelog/"} "Changelog"]]]]]]
     [:div.container
      [:div.main
       page]]
@@ -153,7 +154,7 @@
        %1)
     (.split s " "))))
 
-(defn get-skill-small-table [item meta id]
+(defn get-skill-small-table [item active-skill id skill-gem]
   (let [all-tags (get (find-first data/skill-gems "BaseItemTypesKey" id) "GemTagsKeys")
         display-tags (filter #(> (.length (get %1 "Tag")) 0)
                              (map #(find-first data/gem-tags "Row" %1)
@@ -175,15 +176,15 @@
      [:tr
       [:td.column-key "Required level"]
       [:td (get item "DropLevel")]]
-     [:tr
-      [:td.column-key "Cast time"]
-      [:td (if meta
-             (str (format "%.2f" (/ (get meta "CastTime") 1000.0)) " secs")
-             "N/A")]]
+     (if active-skill
+       [:tr
+        [:td.column-key "Cast time"]
+        [:td (str (format "%.2f" (/ (get active-skill "CastTime") 1000.0)) " secs")]])
      [:tr
       [:td.column-key "Per 1% quality"]
-      [:td (if meta
-             (let [row (first (filter #(> (count (get %1 "Quality_StatsKeys")) 0) (find-all data/granted-effects-per-level "ActiveSkillsKey" (get meta "Row"))))]
+      ;; FIXME: Copy-paste code, this whole page really needs refactoring/cleaning
+      [:td (if active-skill
+             (let [row (first (filter #(> (count (get %1 "Quality_StatsKeys")) 0) (find-all data/granted-effects-per-level "ActiveSkillsKey" (get active-skill "Row"))))]
                (if row
                  (let [stats-keys (get row "Quality_StatsKeys")
                        stats-values (get row "Quality_Values")]
@@ -193,23 +194,32 @@
                            (str (format "%.2f " (/ (nth stats-values i) 1000.0)) (get (find-first data/stats "Row" (nth stats-keys i)) "Id")))
                          (range (count stats-keys)))))
                  "N/A"))
-             "Unknown")]]]))
+             (let [row (first (filter #(> (count (get %1 "Quality_StatsKeys")) 0) (find-all data/granted-effects-per-level "GrantedEffectsKey" (get skill-gem "GrantedEffectsKey"))))]
+               (if row
+                 (let [stats-keys (get row "Quality_StatsKeys")
+                       stats-values (get row "Quality_Values")]
+                   (string/join
+                    ", "
+                    (map (fn [i]
+                           (str (format "%.2f " (/ (nth stats-values i) 1000.0)) (get (find-first data/stats "Row" (nth stats-keys i)) "Id")))
+                         (range (count stats-keys))))))))]]]))
 
+(find-first data/skill-gems "BaseItemTypesKey" 1531)
 (defn skillgem-page [id]
   (fn [ctx]
     (let [item (find-first data/base-item-types "Row" id)
-          meta (find-first data/active-skills "DisplayedName" (get item "Name"))]
+          skill-gem (find-first data/skill-gems "BaseItemTypesKey" id)
+          active-skill (find-first data/active-skills "DisplayedName" (get item "Name"))]
       (layout-page
        ctx
        (get item "Name")
        [:div
         [:h1 (get item "Name")]
-        (if meta
-          [:div
-           [:div.skill-small-table
-            (get-skill-small-table item meta id)
-             [:img {:style "padding-top: 10px; width: 100%" :src (get meta "WebsiteImage")}]]
-           [:p (get meta "Description")]])
+        [:div
+         [:div.skill-small-table
+          (get-skill-small-table item active-skill id skill-gem)
+          [:img {:style "padding-top: 10px; width: 100%" :src (get active-skill "WebsiteImage")}]]
+         [:p (get active-skill "Description")]]
         [:h3 {:style "clear: both"} "Quest rewards"]
         [:table
          [:tr
@@ -260,10 +270,35 @@
                        (assoc (find-first data/quests "Row" (get quest-state "QuestKey"))
                               "CharactersKey" (first (get quest-vendor-reward "CharactersKeys")))))))
                (find-all-contains data/quest-vendor-rewards "BaseItemTypesKeys" id)))]
-        (if meta
+        ;; FIXME: Copy-paste code, this whole page really needs refactoring/cleaning
+        (if active-skill
           (let [ge (filter
                     #(> (count (get %1 "Quality_StatsKeys")) 0)
-                    (find-all data/granted-effects-per-level "ActiveSkillsKey" (get meta "Row")))
+                    (find-all data/granted-effects-per-level "ActiveSkillsKey" (get active-skill "Row")))
+                stat-keys (if (> (count ge) 0)
+                            (get (first ge) "StatsKeys")
+                            '())]
+            [:div
+             [:h3 "Effects"]
+             [:table
+              [:tr
+               [:th "level"]
+               [:th "mana cost"]
+               (map
+                (fn [stat-key]
+                  [:th (get (find-first data/stats "Row" stat-key) "Id")])
+                stat-keys)]
+              (map
+               (fn [effect]
+                 [:tr
+                  [:td (get effect "Level")]
+                  [:td (get effect "ManaCost")]
+                  (for [i (range (count stat-keys))]
+                    [:td (get effect (str "Stat" (+ i 1) "Value"))])])
+               ge)]])
+          (let [ge (filter
+                    #(> (count (get %1 "Quality_StatsKeys")) 0)
+                    (find-all data/granted-effects-per-level "GrantedEffectsKey" (get skill-gem "GrantedEffectsKey")))
                 stat-keys (if (> (count ge) 0)
                             (get (first ge) "StatsKeys")
                             '())]
@@ -526,10 +561,23 @@
            (map #(vector (str "/gemtags/" (get %1 "Row") "/") (get-gemtag %1))
                 (filter #(> (.length (get %1 "Tag")) 0) data/gem-tags)))))
 
+(defn changelog  [ctx]
+  (layout-page
+   ctx
+   nil
+   [:div
+    [:h3 "2015-12-10"]
+    [:ul
+     [:li "Added some info to passive skill pages"]]
+    [:h3 "2015-12-09"]
+    [:ul
+     [:li "Added mana cost to skill page"]]]))
+
 (defn get-pages []
   (merge {"/index.html" index
           "/404.html" not-found
-          "/50x.html" server-error}
+          "/50x.html" server-error
+          "/changelog/" changelog}
          (get-gemtags)
          (get-affixes)
          (get-item-classes)
