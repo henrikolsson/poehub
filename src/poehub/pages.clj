@@ -565,6 +565,9 @@
    ctx
    nil
    [:div
+    [:h3 "2015-12-11"]
+    [:ul
+     [:li "Update for 2.1"]]
     [:h3 "2015-12-10"]
     [:ul
      [:li "Added some info to passive skill pages"]]
