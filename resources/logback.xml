@@ -11,4 +11,5 @@
   </root>
 
   <logger name="poehub.dat" level="INFO"/>
+  <logger name="poehub.ggpk" level="DEBUG"/>
 </configuration>

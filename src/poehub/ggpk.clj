@@ -50,6 +50,7 @@
                   (recur (+ i 1) result)))))))))
 
 (defn read-entry [stream path acc]
+  (log/trace "reading entry:" path)
   (let [curr (.getFilePointer stream)
         next-offset (dat/read-int stream)
         entry-type (String. (dat/read-bytes stream 4) "ASCII")]
@@ -63,6 +64,7 @@
   (with-open [stream (RandomAccessFile. filename "r")]
     (.seek stream 0)
     (let [header (read-header stream)]
+      (log/trace "found header: " header)
       (.seek stream (:root header))
       (read-entry stream [] []))))
 
@@ -86,7 +88,7 @@
   (str base (File/separator) version))
 
 (defn extract-data-files [input-file base-output-dir]
-  (log/info "extracing from:" input-file "...")
+  (log/info "extracting from:" input-file "...")
   (let [version (get-version input-file)
         output-dir-name (get-final-path base-output-dir version)
         output-dir (File. output-dir-name)]
@@ -97,9 +99,10 @@
         (log/info "reading entries...")
         (let [entries (read-entries input-file)
               data-entries (filter #(and (> (.indexOf (:name %1) ".dat") -1)
+                                         (= (.indexOf (:name %1) "Portuguese") -1)
                                          (= (.indexOf (:name %1) "ShaderCache.dat") -1))
                                    entries)]
-          (log/info "extrating data files..")
+          (log/info "extracting data files..")
           (doseq [de data-entries]
             (let [data (read-file input-file de)
                   of (FileOutputStream. (str output-dir-name
